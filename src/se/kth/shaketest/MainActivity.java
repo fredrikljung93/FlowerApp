@@ -16,10 +16,11 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-	private final float shakeThreshold = 15f;
+	private final float shakeThreshold = 1.5f;
 	ImageView imageview;
 	int[] flowers;
 	int currentFlower;
+	int shakeCounter=0;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -134,6 +135,19 @@ public class MainActivity extends Activity {
 						}
 
 					}
+					
+
+					if (isAccelerationChanged(last_x, last_y, last_z, x, y, z)) {
+						shakeCounter++;
+						if(shakeCounter==4){
+							showToast("SHAKE FOUND!");
+							shakeCounter=0;
+						}
+					}
+					else{
+						shakeCounter=0;
+					}
+					
 				}
 			}
 		});
@@ -175,10 +189,6 @@ public class MainActivity extends Activity {
 
 				x2 = (event.values[0] * 0.1) + (x * 0.9);
 
-			}
-
-			if (isAccelerationChanged(last_x, last_y, last_z, x, y, z)) {
-				showToast("SHAKE FOUND!");
 			}
 		}
 	};
