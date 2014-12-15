@@ -4,35 +4,48 @@ import java.io.PrintWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.AnimationDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.os.Vibrator;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+@SuppressLint("NewApi")
 public class MainActivity extends Activity {
 	private final float shakeThreshold = 0.75f;
-	ImageView imageview;
+	ImageView flowerView;
 	int[] flowers;
 	int currentFlower;
-	int shakeCounter=0;
+	int shakeCounter = 0;
+	boolean fallHasCome = false;
+
+	Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			updateUI();
+		}
+	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		imageview = (ImageView) findViewById(R.id.imageView1);
+		flowerView = (ImageView) findViewById(R.id.imageView1);
 
 		flowers = new int[] { R.drawable.flower0, R.drawable.flower10,
 				R.drawable.flower20, R.drawable.flower30, R.drawable.flower40,
 				R.drawable.flower50 };
 		currentFlower = 0;
-
 	}
 
 	public void onPause() {
@@ -61,7 +74,7 @@ public class MainActivity extends Activity {
 		TimerTask updateUITask = new TimerTask() {
 			@Override
 			public void run() {
-				updateUI();
+				handler.sendMessage(new Message());
 			}
 		};
 		updateTimer.scheduleAtFixedRate(updateUITask, 0, 200);
@@ -86,71 +99,77 @@ public class MainActivity extends Activity {
 	}
 
 	private void updateUI() {
-		runOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				if (currentFlower != (int) x2) {
-					currentFlower = (int) x2;
-					switch ((int) x) {
-					case 0:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[0]));
-						imageview.invalidate();
-						break;
-					case 1:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[1]));
-						imageview.invalidate();
-						break;
-					case 2:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[2]));
-						imageview.invalidate();
-						break;
-					case 3:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[3]));
-						imageview.invalidate();
-						break;
-					case 4:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[4]));
-						imageview.invalidate();
-						break;
-					case 5:
-						imageview.setImageDrawable(getResources().getDrawable(
-								flowers[5]));
-						imageview.invalidate();
-						break;
-					default:
-						if (x > 5) {
-							imageview.setImageDrawable(getResources()
-									.getDrawable(flowers[5]));
-							imageview.invalidate();
-						} else {
-							imageview.setImageDrawable(getResources()
-									.getDrawable(flowers[0]));
-							imageview.invalidate();
-						}
-
-					}
-					
-
-					if (isAccelerationChanged(last_x, last_y, last_z, x, y, z)) {
-						shakeCounter++;
-						if(shakeCounter==4){
-							showToast("SHAKE FOUND!");
-							shakeCounter=0;
-						}
-					}
-					else{
-						shakeCounter=0;
-					}
-					
-				}
+		if (fallHasCome) {
+			return;
+		}
+		if (isAccelerationChanged(last_x, last_y, last_z, x, y, z)) {
+			shakeCounter++;
+			if (shakeCounter == 4) {
+				vibrate();
+				flowerView.setBackgroundResource(R.anim.fallanimation);
+				AnimationDrawable frameAnimation = (AnimationDrawable) flowerView
+						.getBackground();
+				frameAnimation.start();
+				shakeCounter = 0;
+				fallHasCome = true;
+				return;
 			}
-		});
+		} else {
+			shakeCounter = 0;
+		}
+
+		if (currentFlower != (int) x2) {
+			currentFlower = (int) x2;
+			switch ((int) x) {
+			case 0:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[0]));
+				flowerView.invalidate();
+				break;
+			case 1:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[1]));
+				flowerView.invalidate();
+				break;
+			case 2:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[2]));
+				flowerView.invalidate();
+				break;
+			case 3:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[3]));
+				flowerView.invalidate();
+				break;
+			case 4:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[4]));
+				flowerView.invalidate();
+				break;
+			case 5:
+				flowerView
+						.setBackground(getResources().getDrawable(flowers[5]));
+				flowerView.invalidate();
+				break;
+			default:
+				if (x > 5) {
+					flowerView.setBackground(getResources().getDrawable(
+							flowers[5]));
+					flowerView.invalidate();
+				} else {
+					flowerView.setBackground(getResources().getDrawable(
+							flowers[0]));
+					flowerView.invalidate();
+				}
+
+			}
+		}
+	}
+
+	private void vibrate() {
+		Vibrator v = (Vibrator) getApplicationContext().getSystemService(
+				Context.VIBRATOR_SERVICE);
+		v.vibrate(100);
 	}
 
 	private SensorManager sensorManager;
