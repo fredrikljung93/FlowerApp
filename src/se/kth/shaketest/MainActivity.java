@@ -16,7 +16,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-	private final float shakeThreshold = 1.5f;
+	private final float shakeThreshold = 0.75f;
 	ImageView imageview;
 	int[] flowers;
 	int currentFlower;
