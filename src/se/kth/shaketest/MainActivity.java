@@ -1,13 +1,12 @@
 package se.kth.shaketest;
 
-import java.io.PrintWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -16,18 +15,22 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
-import android.util.Log;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-@SuppressLint("NewApi")
 public class MainActivity extends Activity {
 	private final float shakeThreshold = 0.75f;
-	ImageView flowerView;
-	int[] flowers;
-	int currentFlower;
-	int shakeCounter = 0;
-	boolean fallHasCome = false;
+	private ImageView flowerView;
+	private Drawable[] flowerDrawables;
+	private int currentFlower;
+	private int shakeCounter = 0;
+	private boolean fallHasCome = false;
+	private SensorManager sensorManager;
+	private boolean firstMeasure = true;
+	private double lowpass_x;
+	private double highpass_x, highpass_y, highpass_z;
+	private double last_highpass_x, last_highpass_y, last_highpass_z;
+	private Timer updateTimer = null;
+	private int sensorFrequency;
 
 	Handler handler = new Handler() {
 		@Override
@@ -42,10 +45,16 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.main);
 		flowerView = (ImageView) findViewById(R.id.imageView1);
 
-		flowers = new int[] { R.drawable.flower0, R.drawable.flower10,
-				R.drawable.flower20, R.drawable.flower30, R.drawable.flower40,
-				R.drawable.flower50 };
 		currentFlower = 0;
+
+		flowerDrawables = new Drawable[] {
+				getResources().getDrawable(R.drawable.flower0),
+				getResources().getDrawable(R.drawable.flower10),
+				getResources().getDrawable(R.drawable.flower20),
+				getResources().getDrawable(R.drawable.flower30),
+				getResources().getDrawable(R.drawable.flower40),
+				getResources().getDrawable(R.drawable.flower50) };
+
 	}
 
 	public void onPause() {
@@ -59,16 +68,11 @@ public class MainActivity extends Activity {
 	}
 
 	private void startListening() {
-
-		// ? Set a timer/check file size to prevent file from draining memory
-
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		Sensor accelerometer = sensorManager
 				.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		sensorManager.registerListener(sensorEventListener, accelerometer,
 				sensorFrequency);
-		// Alt: SensorManager.SENSOR_DELAY_FASTEST, SENSOR_DELAY_NORMAL,
-		// SENSOR_DELAY_UI
 
 		updateTimer = new Timer("updateUI");
 		TimerTask updateUITask = new TimerTask() {
@@ -85,24 +89,14 @@ public class MainActivity extends Activity {
 			sensorManager.unregisterListener(sensorEventListener);
 			updateTimer.cancel();
 		}
-
-		if (writer != null) {
-			try {
-				writer.close();
-				Log.i("stopListening()", "writer closed");
-			} catch (Exception e) {
-				Log.e("onPause", e.toString());
-				System.err.println("Error closing writer");
-				e.printStackTrace(System.err);
-			}
-		}
 	}
 
 	private void updateUI() {
 		if (fallHasCome) {
 			return;
 		}
-		if (isAccelerationChanged(last_x, last_y, last_z, x, y, z)) {
+		if (isAccelerationChanged(last_highpass_x, last_highpass_y,
+				last_highpass_z, highpass_x, highpass_y, highpass_z)) {
 			shakeCounter++;
 			if (shakeCounter == 4) {
 				vibrate();
@@ -117,48 +111,39 @@ public class MainActivity extends Activity {
 		} else {
 			shakeCounter = 0;
 		}
-
-		if (currentFlower != (int) x2) {
-			currentFlower = (int) x2;
-			switch ((int) x) {
+		if (currentFlower != (int) lowpass_x) {
+			currentFlower = (int) lowpass_x;
+			switch ((int) highpass_x) {
 			case 0:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[0]));
+				flowerView.setBackground(flowerDrawables[0]);
 				flowerView.invalidate();
 				break;
 			case 1:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[1]));
+				flowerView.setBackground(flowerDrawables[1]);
 				flowerView.invalidate();
 				break;
 			case 2:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[2]));
+				flowerView.setBackground(flowerDrawables[2]);
 				flowerView.invalidate();
 				break;
 			case 3:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[3]));
+				flowerView.setBackground(flowerDrawables[3]);
 				flowerView.invalidate();
 				break;
 			case 4:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[4]));
+				flowerView.setBackground(flowerDrawables[4]);
 				flowerView.invalidate();
 				break;
 			case 5:
-				flowerView
-						.setBackground(getResources().getDrawable(flowers[5]));
+				flowerView.setBackground(flowerDrawables[5]);
 				flowerView.invalidate();
 				break;
 			default:
-				if (x > 5) {
-					flowerView.setBackground(getResources().getDrawable(
-							flowers[5]));
+				if (highpass_x > 5) {
+					flowerView.setBackground(flowerDrawables[5]);
 					flowerView.invalidate();
 				} else {
-					flowerView.setBackground(getResources().getDrawable(
-							flowers[0]));
+					flowerView.setBackground(flowerDrawables[0]);
 					flowerView.invalidate();
 				}
 
@@ -172,17 +157,6 @@ public class MainActivity extends Activity {
 		v.vibrate(100);
 	}
 
-	private SensorManager sensorManager;
-	private boolean firstMeasure = true;
-	private double x2;
-	private double x, y, z;
-	private double last_x, last_y, last_z;
-	private Timer updateTimer = null;
-	private PrintWriter writer;
-
-	// private boolean startDelay;
-	private int sensorFrequency;
-
 	private final SensorEventListener sensorEventListener = new SensorEventListener() {
 
 		@Override
@@ -192,21 +166,20 @@ public class MainActivity extends Activity {
 
 		@Override
 		public void onSensorChanged(SensorEvent event) {
-			last_x = x;
-			last_y = y;
-			last_z = z;
+			last_highpass_x = highpass_x;
+			last_highpass_y = highpass_y;
+			last_highpass_z = highpass_z;
 			if (firstMeasure) {
-				x = event.values[0];
-				y = event.values[1];
-				z = event.values[2];
-				x2 = x;
+				highpass_x = event.values[0];
+				highpass_y = event.values[1];
+				highpass_z = event.values[2];
+				lowpass_x = highpass_x;
 				firstMeasure = false;
 			} else {
-				x = (event.values[0] * 0.9) + (x * 0.1);
-				y = (event.values[1] * 0.9) + (y * 0.1);
-				z = (event.values[2] * 0.9) + (z * 0.1);
-
-				x2 = (event.values[0] * 0.1) + (x * 0.9);
+				highpass_x = (event.values[0] * 0.9) + (highpass_x * 0.1);
+				highpass_y = (event.values[1] * 0.9) + (highpass_y * 0.1);
+				highpass_z = (event.values[2] * 0.9) + (highpass_z * 0.1);
+				lowpass_x = (event.values[0] * 0.1) + (highpass_x * 0.9);
 
 			}
 		}
@@ -227,11 +200,6 @@ public class MainActivity extends Activity {
 		return (deltaX > shakeThreshold && deltaY > shakeThreshold)
 				|| (deltaX > shakeThreshold && deltaZ > shakeThreshold)
 				|| (deltaY > shakeThreshold && deltaZ > shakeThreshold);
-	}
-
-	private void showToast(CharSequence msg) {
-		Toast toast = Toast.makeText(this, msg, Toast.LENGTH_SHORT);
-		toast.show();
 	}
 
 }
