@@ -228,18 +228,26 @@ public class MainActivity extends Activity {
 
 	/*
 	 * Method based on method from literature "Android cookbook"
-	 * 
-	 * If the values of acceleration have changed on at least two axises, we are
-	 * probably in a shake motion
 	 */
 	/**
 	 * Checks whether the device is in a shake motion or not
-	 * @param xPreviousAccel Previous measured x value
-	 * @param yPreviousAccel Previous measured y value
-	 * @param zPreviousAccel Previous measured z value
-	 * @param xAccel Current measured x value
-	 * @param yAccel Current measured y value
-	 * @param zAccel Current measured z value
+	 * 
+	 * If the device accelerations rate of change is above the shake threshold
+	 * in at least 2/3 axis (x,y,z), the device is considered to be in a shake
+	 * motion
+	 * 
+	 * @param xPreviousAccel
+	 *            Previous measured x value
+	 * @param yPreviousAccel
+	 *            Previous measured y value
+	 * @param zPreviousAccel
+	 *            Previous measured z value
+	 * @param xAccel
+	 *            Current measured x value
+	 * @param yAccel
+	 *            Current measured y value
+	 * @param zAccel
+	 *            Current measured z value
 	 * @return True if in a shaking motion, false if not
 	 */
 	private boolean isAccelerationChanged(double xPreviousAccel,
