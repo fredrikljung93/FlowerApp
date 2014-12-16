@@ -19,6 +19,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 
+/**
+ * Application which displays a wilting flower
+ * 
+ * @author Jonas Andersson, Fredrik Ljung
+ * 
+ */
 public class MainActivity extends Activity {
 	private final float shakeThreshold = 0.75f;
 	private ImageView flowerView;
@@ -84,11 +90,15 @@ public class MainActivity extends Activity {
 		int id = item.getItemId();
 		if (id == R.id.restart) {
 			fallHasCome = false;
-			shakeCounter=0;
+			shakeCounter = 0;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
+	/**
+	 * Method which starts accelerometer and a updateTimer which updates the UI
+	 * every 200 ms.
+	 */
 	private void startListening() {
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		Sensor accelerometer = sensorManager
@@ -106,6 +116,9 @@ public class MainActivity extends Activity {
 		updateTimer.scheduleAtFixedRate(updateUITask, 0, 200);
 	}
 
+	/**
+	 * Stops accelerometer and cancels UI-timer
+	 */
 	private void stopListening() {
 		if (sensorManager != null) {
 			sensorManager.unregisterListener(sensorEventListener);
@@ -113,6 +126,9 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	/**
+	 * Updates view according to measured values
+	 */
 	private void updateUI() {
 		if (fallHasCome) {
 			return;
@@ -173,6 +189,9 @@ public class MainActivity extends Activity {
 		}
 	}
 
+	/**
+	 * Makes device vibrate for 100 ms
+	 */
 	private void vibrate() {
 		Vibrator v = (Vibrator) getApplicationContext().getSystemService(
 				Context.VIBRATOR_SERVICE);
@@ -212,6 +231,16 @@ public class MainActivity extends Activity {
 	 * 
 	 * If the values of acceleration have changed on at least two axises, we are
 	 * probably in a shake motion
+	 */
+	/**
+	 * Checks whether the device is in a shake motion or not
+	 * @param xPreviousAccel Previous measured x value
+	 * @param yPreviousAccel Previous measured y value
+	 * @param zPreviousAccel Previous measured z value
+	 * @param xAccel Current measured x value
+	 * @param yAccel Current measured y value
+	 * @param zAccel Current measured z value
+	 * @return True if in a shaking motion, false if not
 	 */
 	private boolean isAccelerationChanged(double xPreviousAccel,
 			double yPreviousAccel, double zPreviousAccel, double xAccel,
